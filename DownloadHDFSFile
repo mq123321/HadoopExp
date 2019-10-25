@@ -1,0 +1,33 @@
+package hadoop.ch03.xmq17124080239;
+
+import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.*;
+
+import org.apache.hadoop.io.IOUtils;
+
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import java.net.URI;
+public class DownloadHDFSFile {
+    public static void main(String[] args) throws Exception {
+        Configuration conf = new Configuration();
+        URI uri = new URI("hdfs://192.168.30.130:9000");
+        FileSystem fs = FileSystem.get(uri, conf, "hadoop");
+        FSDataOutputStream os = fs.create(dfs, true);
+//        dfs.writeBytes("hello,hdfs!");
+        os.writeChars("hello world-薛明前");
+        os.close();
+
+        InputStream in = fs.open(new Path("/17124080239/test5.txt"));
+        OutputStream out = new FileOutputStream("H://test5.txt");
+        IOUtils.copyBytes(in , out ,4096,true);
+        fs.close();
+
+
+    }
+
+
+
+}
