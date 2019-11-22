@@ -1,0 +1,99 @@
+package hadoop.ch06;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.KeyValue;
+public class HBaseDemo03 {
+    static Configuration conf = HBaseConfiguration.create();
+    static Connection connect = null;
+    static {
+        try {
+            conf.set("hbase.zookeeper.quorum", "node1");
+            conf.set("hbase.rootdir", "hdfs://node1:9000/hbase");
+            conf.set("hbase.cluster.distributed", "true");
+            connect = ConnectionFactory.createConnection(conf);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public static void main(String[] args)throws Exception{
+
+        createTable();
+        insert();
+        get();
+        scan();
+    }
+
+    /**
+     * 创建表格
+     * @throws Exception
+     */
+    private static void createTable() throws Exception{
+        Admin admin = connect.getAdmin();
+        TableName tn = TableName.valueOf("emp17124080130");
+        String[] family=new String[]{"member_id","address","info","id"};
+        HTableDescriptor desc = new HTableDescriptor(tn);
+        for (int i = 0; i < family.length; i++) {
+            desc.addFamily(new HColumnDescriptor(family[i]));
+        }
+        if (admin.tableExists(tn)) {
+            System.out.println("table Exists!");
+            System.exit(0);
+        } else {
+            admin.createTable(desc);
+            System.out.println("create table Success!");
+        }
+    }
+    //写入数据
+    private static void insert() throws Exception {
+        TableName tn = TableName.valueOf("emp17124080130");
+        Table table = connect.getTable(tn);
+        Put put = new Put(Bytes.toBytes("Rain"));//主键
+        put.addColumn(Bytes.toBytes("id"), Bytes.toBytes("id"), Bytes.toBytes("31"));
+        put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("age"), Bytes.toBytes("28"));
+        put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("birthday"), Bytes.toBytes("1990-05-01"));
+        put.addColumn(Bytes.toBytes("info"), Bytes.toBytes("industry"), Bytes.toBytes("architect"));
+        put.addColumn(Bytes.toBytes("address"), Bytes.toBytes("city"), Bytes.toBytes("ShenZhen"));
+        put.addColumn(Bytes.toBytes("address"), Bytes.toBytes("country"), Bytes.toBytes("China"));
+        table.put(put);
+        System.out.println("add data Success!");
+    }
+    //获取某行列族
+    private static void get() throws Exception {
+        Table table = connect.getTable(TableName.valueOf("emp17124080130"));
+        Get get = new Get(Bytes.toBytes("Rain"));
+        get.addFamily(Bytes.toBytes("info"));
+        Result result = table.get(get);
+        for ( Cell cell : result.listCells()) {
+            System.out.println(new String(CellUtil.cloneRow(cell)));
+            System.out.println("A: " + new String(CellUtil.cloneRow(cell)));
+            System.out.println("B: " + new String(CellUtil.cloneFamily(cell)));
+            System.out.println("C: " + new String(CellUtil.cloneQualifier(cell)));
+            System.out.println("D:  " + new String(CellUtil.cloneValue(cell)));
+        }
+        System.out.println("位置: " + result);
+    }
+    //扫描某行
+    private static void scan() throws Exception{
+        Table table = connect.getTable(TableName.valueOf("emp17124080130"));
+        Get get = new Get(Bytes.toBytes("Rain"));
+        get.addColumn(Bytes.toBytes("info"),Bytes.toBytes("birthday"));
+        Result result = table.get(get);
+        for (KeyValue k : result.list()) {
+            System.out.println(Bytes.toString(k.getFamily()) +":"+ Bytes.toString(k.getQualifier()) +"==>"+ k.getTimestamp()  );
+        }
+    }
+
+}
